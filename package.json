@@ -1,0 +1,26 @@
+{
+  "name": "thenoblecookbook",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "Start": "node server.js",
+    "Swagger AutoGen": "node utils/swagger.js",
+    "Reset Swagger": "del swagger.json && node utils/swagger.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "mongoose": "^8.8.3",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1",
+    "urijs": "^1.19.11"
+  }
+}
