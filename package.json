@@ -5,7 +5,7 @@
   "scripts": {
     "Start": "node server.js",
     "Swagger AutoGen": "node utils/swagger.js",
-    "Reset Swagger": "del swagger.json && node utils/swagger.js"
+    "Reset Swagger": "del swagger.json && node utils/swagger.js && node server.js"
   },
   "keywords": [],
   "author": "",
