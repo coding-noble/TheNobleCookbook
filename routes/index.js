@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Register routes
 router.use("/api-docs", swaggerRoutes);    // Register swagger documentation routes under /api-docs
-router.use("/auth", authenticationRoutes); // Register authentication routes under /auth (GitHub, Facebook, Google login)
+router.use("/", authenticationRoutes);     // Register authentication routes under / (GitHub, Google login)
 router.use("/categories", categoryRoutes); // Register category routes under /categories
 router.use("/recipes", recipeRoutes);      // Register recipe routes under /recipes
 router.use("/reviews", reviewRoutes);      // Register review routes under /reviews

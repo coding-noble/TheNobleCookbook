@@ -12,12 +12,72 @@
     "https"
   ],
   "paths": {
-    "/auth/": {
+    "/github": {
       "get": {
+        "tags": [
+          "Login Authentication"
+        ],
+        "summary": "Login GitHub",
         "description": "",
         "responses": {
-          "200": {
-            "description": "OK"
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/google": {
+      "get": {
+        "tags": [
+          "Login Authentication"
+        ],
+        "summary": "Login Google",
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/github/callback": {
+      "get": {
+        "tags": [
+          "Login Authentication"
+        ],
+        "summary": "GitHub Callback",
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/google/callback": {
+      "get": {
+        "tags": [
+          "Login Authentication"
+        ],
+        "summary": "Google Callback",
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/logout": {
+      "get": {
+        "tags": [
+          "Login Authentication"
+        ],
+        "summary": "Logout",
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
           }
         }
       }
@@ -530,6 +590,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "201": {
             "description": "Created"
           },

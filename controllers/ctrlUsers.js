@@ -25,6 +25,18 @@ const createUser = async (req, res) => {
     const updatedAt = createdAt;
     const role = "user";
 
+    const db = getDatabase();
+    const existingUser = await db.collection(DB_COLLECTION).findOne({
+        "oauthProviders.provider": provider,
+        "oauthProviders.providerId": providerId
+    });
+
+    if (existingUser) {
+        // If the user exists, return the existing user
+        return res.status(200).json({ message: "User already exists", user: existingUser });
+    }
+
+    // Build New User
     const newUser = {
         email,
         oauthProviders: [{ provider, providerId }],
@@ -39,7 +51,6 @@ const createUser = async (req, res) => {
     };
 
     // Insert into DB
-    db = getDatabase();
     handleDatabaseAction(() =>
         db.collection(DB_COLLECTION).insertOne(newUser)
             .then(result =>

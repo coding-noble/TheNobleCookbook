@@ -6,6 +6,10 @@ const cors = require("cors");
 const mongodb = require("./data/database.js");
 const routes = require("./routes");
 
+// Strategies for Login Authentication
+const GitHubStrategy = require('passport-github2').Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
 const port = process.env.PORT || 2600;
 const app = express();
 
@@ -23,7 +27,33 @@ app.use(bodyParser.json())
 
 // Root route
 app.get('/', (req, res) => {
-    res.send(req.session.user ? `Logged in as ${req.session.user.displayName}` : "Logged Out");
+    res.send(req.session.user ? `Logged in as ${req.session.user.profile.name}` : "Logged Out");
+});
+
+// Configure GitHub strategy
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL
+}, function (accessToken, refreshToken, profile, done) {
+    return done(null, profile);
+}));
+
+// Configure Google strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
+}, function (accessToken, refreshToken, profile, done) {
+    return done(null, profile);
+}));
+
+// Serialize and deserialize user
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+passport.deserializeUser(async function (user, done) {
+    done(null, user);
 });
 
 // Start server and connect to the database
