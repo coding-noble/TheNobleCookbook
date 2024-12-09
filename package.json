@@ -5,7 +5,8 @@
   "scripts": {
     "Start": "node server.js",
     "Swagger AutoGen": "node utils/swagger.js",
-    "Reset Swagger": "del swagger.json && node utils/swagger.js && node server.js"
+    "Reset Swagger": "del swagger.json && node utils/swagger.js && node server.js",
+    "Run Jest": "npx jest"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +18,7 @@
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "express-validator": "^7.2.0",
+    "mockingoose": "^2.16.2",
     "mongoose": "^8.8.3",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
@@ -24,5 +26,8 @@
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.1",
     "urijs": "^1.19.11"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
