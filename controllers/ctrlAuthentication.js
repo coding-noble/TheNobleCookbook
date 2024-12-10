@@ -2,27 +2,26 @@ const passport = require('passport');
 const { getDatabase } = require("../data/database");
 
 // GitHub login route handler
-exports.githubLogin = (req, res, next) => {
+const githubLogin = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'Login GitHub'
     passport.authenticate('github')(req, res, next);
 };
 
 // Google login route handler
-exports.googleLogin = (req, res, next) => {
+const googleLogin = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'Login Google'
     passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 };
 
 // GitHub callback route handler
-exports.githubCallback = (req, res, next) => {
+const githubCallback = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'GitHub Callback'
     passport.authenticate('github', { failureRedirect: '/' })(req, res, async () => {
 
         try {
-            // Extract GitHub user data
             const { nodeId, displayName, provider, email, avatar_url, bio } = req.user;
             const createdAt = new Date();
             const updatedAt = createdAt;
@@ -30,21 +29,17 @@ exports.githubCallback = (req, res, next) => {
 
             const newUser = {
                 email: email,
-                oauthProviders: [{
-                    provider: provider,
-                    providerId: nodeId
-                }],
+                oauthProviders: [{ provider, providerId: nodeId }],
                 profile: {
                     name: displayName || '',
                     bio: bio || '',
                     avatarUrl: avatar_url || '',
                 },
-                role: role,
-                createdAt: createdAt,
-                updatedAt: updatedAt
+                role,
+                createdAt,
+                updatedAt
             };
 
-            // Check if the user already exists based on provider and providerId
             const db = getDatabase();
             const existingUser = await db.collection("users").findOne({
                 "oauthProviders.provider": provider,
@@ -52,14 +47,11 @@ exports.githubCallback = (req, res, next) => {
             });
 
             if (existingUser) {
-                // If the user exists, return the existing user
                 req.session.user = existingUser;
                 return res.redirect('/');
             }
 
-            // If the user doesn't exist, create a new user
             const createdUser = await db.collection("users").insertOne(newUser);
-
             if (createdUser.insertedId) {
                 req.session.user = { _id: createdUser.insertedId, ...newUser };
                 return res.redirect('/');
@@ -74,12 +66,11 @@ exports.githubCallback = (req, res, next) => {
 };
 
 // Google callback route handler
-exports.googleCallback = (req, res, next) => {
+const googleCallback = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'Google Callback'
     passport.authenticate('google', { failureRedirect: '/' })(req, res, async () => {
         try {
-            // Extract Google user data from req.user
             const { displayName, provider, _json } = req.user;
             const sub = _json.sub;
             const email = _json.email || null;
@@ -90,22 +81,18 @@ exports.googleCallback = (req, res, next) => {
             const role = "user";
 
             const newUser = {
-                email: email,
-                oauthProviders: [{
-                    provider: provider,
-                    providerId: sub
-                }],
+                email,
+                oauthProviders: [{ provider, providerId: sub }],
                 profile: {
                     name: displayName || '',
                     bio: '',
                     avatarUrl: picture,
                 },
-                role: role,
-                createdAt: createdAt,
-                updatedAt: updatedAt
+                role,
+                createdAt,
+                updatedAt
             };
 
-            // Check if the user already exists based on provider and providerId
             const db = getDatabase();
             const existingUser = await db.collection("users").findOne({
                 "oauthProviders.provider": provider,
@@ -113,14 +100,11 @@ exports.googleCallback = (req, res, next) => {
             });
 
             if (existingUser) {
-                // If the user exists, return the existing user
                 req.session.user = existingUser;
                 return res.redirect('/');
             }
 
-            // If the user doesn't exist, create a new user
             const createdUser = await db.collection("users").insertOne(newUser);
-
             if (createdUser.insertedId) {
                 req.session.user = { _id: createdUser.insertedId, ...newUser };
                 return res.redirect('/');
@@ -135,7 +119,7 @@ exports.googleCallback = (req, res, next) => {
 };
 
 // Logout route handler
-exports.logout = (req, res, next) => {
+const logout = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'Logout'
     req.logout((err) => {
@@ -144,4 +128,12 @@ exports.logout = (req, res, next) => {
         }
         res.redirect('/');
     });
+};
+
+module.exports = {
+    githubLogin,
+    googleLogin,
+    githubCallback,
+    googleCallback,
+    logout
 };

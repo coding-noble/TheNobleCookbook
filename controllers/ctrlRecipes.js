@@ -1,5 +1,4 @@
 const { getDatabase } = require("../data/database");
-const { handleDatabaseAction } = require("./util");
 const { check, validationResult } = require('express-validator');
 const { ObjectId } = require("mongodb");
 const DB_COLLECTION = "recipes";
@@ -9,6 +8,7 @@ const createRecipe = async (req, res) => {
     //#swagger.tags = ['Recipes']
     //#swagger.summary = 'Create New Recipe'
 
+    // Validation
     await check('title').notEmpty().withMessage('Title is required').run(req);
     await check('description').notEmpty().withMessage('Description is required').run(req);
     await check('ingredients').isArray({ min: 1 }).withMessage('Ingredients must be a non-empty list').run(req);
@@ -39,14 +39,18 @@ const createRecipe = async (req, res) => {
         updatedAt
     };
 
-    const db = getDatabase();
-    handleDatabaseAction(() =>
-        db.collection(DB_COLLECTION).insertOne(newRecipe)
-            .then(result => result.insertedId ?
-                res.status(201).json({ _id: result.insertedId, ...newRecipe }) :
-                res.status(500).json({ error: "Failed to create recipe" })),
-        res
-    );
+    try {
+        const db = getDatabase();
+        const result = await db.collection(DB_COLLECTION).insertOne(newRecipe);
+        if (result.insertedId) {
+            return res.status(201).json({ _id: result.insertedId, ...newRecipe });
+        } else {
+            return res.status(500).json({ error: "Failed to create recipe" });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message || "Database action error" });
+    }
 };
 
 /** Get all recipes */
@@ -54,11 +58,14 @@ const getAllRecipes = async (req, res) => {
     //#swagger.tags = ['Recipes']
     //#swagger.summary = 'Get All Recipes'
 
-    const db = getDatabase();
-    handleDatabaseAction(() =>
-        db.collection(DB_COLLECTION).find().toArray().then(data => res.status(200).json(data)),
-        res
-    );
+    try {
+        const db = getDatabase();
+        const data = await db.collection(DB_COLLECTION).find().toArray();
+        return res.status(200).json(data);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message || "Database action error" });
+    }
 };
 
 /** Get a single recipe by ID */
@@ -67,12 +74,18 @@ const getRecipe = async (req, res) => {
     //#swagger.summary = 'Get Single Recipe by ID'
 
     const { id } = req.params;
-    const db = getDatabase();
-    handleDatabaseAction(() =>
-        db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) })
-            .then(data => data ? res.status(200).json(data) : res.status(404).json({ error: "Recipe not found" })),
-        res
-    );
+    try {
+        const db = getDatabase();
+        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        if (data) {
+            return res.status(200).json(data);
+        } else {
+            return res.status(404).json({ error: "Recipe not found" });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message || "Database action error" });
+    }
 };
 
 /** Update recipe by ID */
@@ -80,6 +93,7 @@ const updateRecipe = async (req, res) => {
     //#swagger.tags = ['Recipes']
     //#swagger.summary = 'Edit/Update Recipe by ID'
 
+    // Validation
     await check('title').optional().notEmpty().withMessage('Title must not be empty').run(req);
     await check('description').optional().notEmpty().withMessage('Description must not be empty').run(req);
     await check('ingredients').optional().isArray({ min: 1 }).withMessage('Ingredients must be a non-empty list').run(req);
@@ -96,27 +110,32 @@ const updateRecipe = async (req, res) => {
     const { title, description, ingredients, instructions, categoryId, publisherId, image } = req.body;
     const updatedAt = new Date();
 
-    const db = getDatabase();
-    handleDatabaseAction(() =>
-        db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) })
-            .then(data => {
-                if (!data) return res.status(404).json({ error: "Recipe not found" });
-                const updatedRecipe = {
-                    ...data,
-                    title: title || data.title,
-                    description: description || data.description,
-                    ingredients: ingredients || data.ingredients,
-                    instructions: instructions || data.instructions,
-                    categoryId: categoryId ? new ObjectId(categoryId) : data.categoryId,
-                    publisherId: publisherId ? new ObjectId(publisherId) : data.publisherId,
-                    image: image || data.image,
-                    updatedAt
-                };
-                return db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedRecipe })
-                    .then(() => res.status(200).json(updatedRecipe));
-            }),
-        res
-    );
+    try {
+        const db = getDatabase();
+        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        
+        if (!data) {
+            return res.status(404).json({ error: "Recipe not found" });
+        }
+
+        const updatedRecipe = {
+            ...data,
+            title: title || data.title,
+            description: description || data.description,
+            ingredients: ingredients || data.ingredients,
+            instructions: instructions || data.instructions,
+            categoryId: categoryId ? new ObjectId(categoryId) : data.categoryId,
+            publisherId: publisherId ? new ObjectId(publisherId) : data.publisherId,
+            image: image || data.image,
+            updatedAt
+        };
+
+        await db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedRecipe });
+        return res.status(200).json(updatedRecipe);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message || "Database action error" });
+    }
 };
 
 /** Delete a recipe by ID */
@@ -124,6 +143,7 @@ const deleteRecipe = async (req, res) => {
     //#swagger.tags = ['Recipes']
     //#swagger.summary = 'Delete Recipe by ID'
 
+    // Validation
     await check('id').isMongoId().withMessage('Invalid recipe ID').run(req);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -131,16 +151,21 @@ const deleteRecipe = async (req, res) => {
     }
 
     const { id } = req.params;
-    const db = getDatabase();
-    handleDatabaseAction(() =>
-        db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) })
-            .then(data => {
-                if (!data) return res.status(404).json({ error: "Recipe not found" });
-                return db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) })
-                    .then(() => res.status(200).json({ message: "Recipe deleted successfully" }));
-            }),
-        res
-    );
+
+    try {
+        const db = getDatabase();
+        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        
+        if (!data) {
+            return res.status(404).json({ error: "Recipe not found" });
+        }
+
+        await db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+        return res.status(200).json({ message: "Recipe deleted successfully" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message || "Database action error" });
+    }
 };
 
 /** Module Exports */
