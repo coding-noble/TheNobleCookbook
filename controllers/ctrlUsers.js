@@ -102,21 +102,33 @@ const updateUser = async (req, res) => {
     const { email, name, bio, avatarUrl } = req.body;
 
     try {
-        const user = await User.findById(id); // Use Mongoose .findById() to find the user
+        // Find the user by ID
+        const user = await User.findById(id);
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Update the user fields
-        user.email = email || user.email;
-        user.profile.name = name || user.profile.name;
-        user.profile.bio = bio || user.profile.bio;
-        user.profile.avatarUrl = avatarUrl || user.profile.avatarUrl;
-        user.updatedAt = new Date(); // Update the updatedAt field
+        if (email) {
+            user.email = email;
+        }
 
-        // Save the updated user
-        const updatedUser = await user.updateOne({ _id: id });
+        if (name) {
+            user.profile.name = name;
+        }
+
+        if (bio) {
+            user.profile.bio = bio;
+        }
+
+        if (avatarUrl) {
+            user.profile.avatarUrl = avatarUrl;
+        }
+
+        user.updatedAt = new Date();
+
+        // Save the updated user document
+        const updatedUser = await user.save();
 
         return res.status(200).json(updatedUser); // Return the updated user
     } catch (err) {
@@ -124,6 +136,7 @@ const updateUser = async (req, res) => {
         return res.status(500).json({ error: err.message || "Database action error" });
     }
 };
+
 
 /** Delete user by ID */
 const deleteUser = async (req, res) => {
