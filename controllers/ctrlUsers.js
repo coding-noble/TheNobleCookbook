@@ -1,7 +1,5 @@
-const { getDatabase } = require("../data/database");
+const User = require('../models/User');
 const { check, validationResult } = require('express-validator');
-const { ObjectId } = require("mongodb");
-const DB_COLLECTION = "users";
 
 /** Create a new user */
 const createUser = async (req, res) => {
@@ -20,13 +18,10 @@ const createUser = async (req, res) => {
     }
 
     const { email, provider, providerId, name, bio, avatarUrl } = req.body;
-    const createdAt = new Date();
-    const updatedAt = createdAt;
-    const role = "user";
 
     try {
-        const db = getDatabase();
-        const existingUser = await db.collection(DB_COLLECTION).findOne({
+        // Check if the user already exists based on provider and providerId
+        const existingUser = await User.findOne({
             "oauthProviders.provider": provider,
             "oauthProviders.providerId": providerId
         });
@@ -35,28 +30,20 @@ const createUser = async (req, res) => {
             return res.status(200).json({ message: "User already exists", user: existingUser });
         }
 
-        const newUser = {
+        // Create a new user
+        const newUser = new User({
             email,
             oauthProviders: [{ provider, providerId }],
-            profile: {
-                name: name || '',
-                bio: bio || '',
-                avatarUrl: avatarUrl || '',
-            },
-            role,
-            createdAt,
-            updatedAt
-        };
+            profile: { name, bio: bio || '', avatarUrl: avatarUrl || '' }
+        });
 
-        const result = await db.collection(DB_COLLECTION).insertOne(newUser);
-        if (result.insertedId) {
-            return res.status(201).json({ _id: result.insertedId, ...newUser });
-        } else {
-            return res.status(500).json({ error: "Failed to insert user" });
-        }
+        // Save the user
+        const savedUser = await newUser.save();
+
+        return res.status(201).json(savedUser); // Return the saved user
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: err.message || "Database action error" });
+        return res.status(500).json({ error: err.message || "Failed to insert user" });
     }
 };
 
@@ -66,8 +53,7 @@ const getAllUsers = async (req, res) => {
     //#swagger.summary = 'Get All Users'
 
     try {
-        const db = getDatabase();
-        const users = await db.collection(DB_COLLECTION).find().toArray();
+        const users = await User.find(); // Use Mongoose .find() method to get all users
         return res.status(200).json(users);
     } catch (err) {
         console.error(err);
@@ -83,8 +69,7 @@ const getUser = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = getDatabase();
-        const user = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const user = await User.findById(id); // Use Mongoose .findById() to find user by ID
 
         if (user) {
             return res.status(200).json(user);
@@ -115,30 +100,25 @@ const updateUser = async (req, res) => {
 
     const { id } = req.params;
     const { email, name, bio, avatarUrl } = req.body;
-    const updatedAt = new Date();
 
     try {
-        const db = getDatabase();
-        const user = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const user = await User.findById(id); // Use Mongoose .findById() to find the user
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const updatedUser = {
-            ...user,
-            email: email || user.email,
-            profile: {
-                ...user.profile,
-                name: name || user.profile.name,
-                bio: bio || user.profile.bio,
-                avatarUrl: avatarUrl || user.profile.avatarUrl,
-            },
-            updatedAt
-        };
+        // Update the user fields
+        user.email = email || user.email;
+        user.profile.name = name || user.profile.name;
+        user.profile.bio = bio || user.profile.bio;
+        user.profile.avatarUrl = avatarUrl || user.profile.avatarUrl;
+        user.updatedAt = new Date(); // Update the updatedAt field
 
-        await db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedUser });
-        return res.status(200).json(updatedUser);
+        // Save the updated user
+        const updatedUser = await user.save();
+
+        return res.status(200).json(updatedUser); // Return the updated user
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -159,14 +139,15 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = getDatabase();
-        const user = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const user = await User.findById(id);
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        await db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+        // Delete the user
+        await user.deleteOne({ _id: id });
+
         return res.status(200).json({ message: "User deleted successfully" });
     } catch (err) {
         console.error(err);

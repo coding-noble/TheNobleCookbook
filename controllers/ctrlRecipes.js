@@ -1,7 +1,5 @@
-const { getDatabase } = require("../data/database");
 const { check, validationResult } = require('express-validator');
-const { ObjectId } = require("mongodb");
-const DB_COLLECTION = "recipes";
+const Recipe = require('../models/Recipe');
 
 /** Create a new recipe */
 const createRecipe = async (req, res) => {
@@ -25,31 +23,26 @@ const createRecipe = async (req, res) => {
     const createdAt = new Date();
     const updatedAt = createdAt;
 
-    const newRecipe = {
-        title,
-        description,
-        ingredients,
-        instructions,
-        categoryId: new ObjectId(categoryId),
-        publisherId: new ObjectId(publisherId),
-        rating: 0,
-        reviews: [],
-        image: image || null,
-        createdAt,
-        updatedAt
-    };
-
     try {
-        const db = getDatabase();
-        const result = await db.collection(DB_COLLECTION).insertOne(newRecipe);
-        if (result.insertedId) {
-            return res.status(201).json({ _id: result.insertedId, ...newRecipe });
-        } else {
-            return res.status(500).json({ error: "Failed to create recipe" });
-        }
+        const newRecipe = new Recipe({
+            title,
+            description,
+            ingredients,
+            instructions,
+            categoryId,
+            publisherId,
+            rating: 0,
+            reviews: [],
+            image: image || null,
+            createdAt,
+            updatedAt
+        });
+
+        const savedRecipe = await newRecipe.save();
+        return res.status(201).json(savedRecipe);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: err.message || "Database action error" });
+        return res.status(500).json({ error: err.message || "Failed to create recipe" });
     }
 };
 
@@ -59,9 +52,8 @@ const getAllRecipes = async (req, res) => {
     //#swagger.summary = 'Get All Recipes'
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).find().toArray();
-        return res.status(200).json(data);
+        const recipes = await Recipe.find();
+        return res.status(200).json(recipes);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -75,10 +67,9 @@ const getRecipe = async (req, res) => {
 
     const { id } = req.params;
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
-        if (data) {
-            return res.status(200).json(data);
+        const recipe = await Recipe.findById(id);
+        if (recipe) {
+            return res.status(200).json(recipe);
         } else {
             return res.status(404).json({ error: "Recipe not found" });
         }
@@ -111,26 +102,24 @@ const updateRecipe = async (req, res) => {
     const updatedAt = new Date();
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
-        
-        if (!data) {
+        const recipe = await Recipe.findById(id);
+
+        if (!recipe) {
             return res.status(404).json({ error: "Recipe not found" });
         }
 
-        const updatedRecipe = {
-            ...data,
-            title: title || data.title,
-            description: description || data.description,
-            ingredients: ingredients || data.ingredients,
-            instructions: instructions || data.instructions,
-            categoryId: categoryId ? new ObjectId(categoryId) : data.categoryId,
-            publisherId: publisherId ? new ObjectId(publisherId) : data.publisherId,
-            image: image || data.image,
-            updatedAt
-        };
+        // Update the recipe fields
+        recipe.title = title || recipe.title;
+        recipe.description = description || recipe.description;
+        recipe.ingredients = ingredients || recipe.ingredients;
+        recipe.instructions = instructions || recipe.instructions;
+        recipe.categoryId = categoryId || recipe.categoryId;
+        recipe.publisherId = publisherId || recipe.publisherId;
+        recipe.image = image || recipe.image;
+        recipe.updatedAt = updatedAt;
 
-        await db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedRecipe });
+        // Save the updated recipe
+        const updatedRecipe = await recipe.save();
         return res.status(200).json(updatedRecipe);
     } catch (err) {
         console.error(err);
@@ -153,14 +142,15 @@ const deleteRecipe = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
-        
-        if (!data) {
+        const recipe = await Recipe.findById(id);
+
+        if (!recipe) {
             return res.status(404).json({ error: "Recipe not found" });
         }
 
-        await db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+        // Delete the recipe
+        await recipe.deleteOne({ _id: id });
+
         return res.status(200).json({ message: "Recipe deleted successfully" });
     } catch (err) {
         console.error(err);

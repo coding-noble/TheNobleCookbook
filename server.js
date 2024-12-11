@@ -3,8 +3,8 @@ const bodyParser = require("body-parser");
 const passport = require("passport");
 const session = require("express-session");
 const cors = require("cors");
-const mongodb = require("./data/database.js");
 const routes = require("./routes");
+const { initDb } = require("./data/database");
 
 // Strategies for Login Authentication
 const GitHubStrategy = require('passport-github2').Strategy;
@@ -56,14 +56,14 @@ passport.deserializeUser(async function (user, done) {
     done(null, user);
 });
 
-// Start server and connect to the database
+// Start server and connect to MongoDB using Mongoose
 const startServer = async () => {
     try {
-        await mongodb.initDb("The-Noble-Cookbook"); // Initialize The Noble Cookbook DB
-        app.listen(port, () => console.log(`Server running on http://localhost:${port}`)); // Start the server
+        await initDb(); // Initializes Mongoose connection
+        app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
     } catch (err) {
-        console.error('Database initialization error:', err); // Handle any DB errors
-        process.exit(1); // Exit the process if DB setup fails
+        console.error('Database initialization error:', err);
+        process.exit(1); // Exit if DB connection fails
     }
 };
 

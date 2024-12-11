@@ -1,7 +1,5 @@
-const { getDatabase } = require("../data/database");
+const Review = require('../models/Review');
 const { check, validationResult } = require('express-validator');
-const { ObjectId } = require("mongodb");
-const DB_COLLECTION = "reviews";
 
 /** Create a new review */
 const createReview = async (req, res) => {
@@ -19,30 +17,22 @@ const createReview = async (req, res) => {
     }
 
     const { recipeId, userId, rating, comment } = req.body;
-    const createdAt = new Date();
-    const updatedAt = createdAt;
-
-    const newReview = {
-        recipeId: new ObjectId(recipeId),
-        userId: new ObjectId(userId),
-        rating,
-        comment: comment || null,
-        comments: [], // Initialize empty comments array
-        createdAt,
-        updatedAt
-    };
 
     try {
-        const db = getDatabase();
-        const result = await db.collection(DB_COLLECTION).insertOne(newReview);
-        if (result.insertedId) {
-            return res.status(201).json({ _id: result.insertedId, ...newReview });
-        } else {
-            return res.status(500).json({ error: "Failed to create review" });
-        }
+        // Create a new review using the Mongoose model
+        const newReview = new Review({
+            recipeId,
+            userId,
+            rating,
+            comment: comment || null
+        });
+
+        const savedReview = await newReview.save(); // Save to MongoDB using Mongoose
+
+        return res.status(201).json(savedReview);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: err.message || "Database action error" });
+        return res.status(500).json({ error: err.message || "Failed to create review" });
     }
 };
 
@@ -65,24 +55,25 @@ const addCommentToReview = async (req, res) => {
     const { userId, comment } = req.body;
     const createdAt = new Date();
 
-    const newComment = {
-        userId: new ObjectId(userId),
-        comment,
-        createdAt
-    };
-
     try {
-        const db = getDatabase();
-        const result = await db.collection(DB_COLLECTION).updateOne(
-            { _id: new ObjectId(id) },
-            { $push: { comments: newComment }, $set: { updatedAt: new Date() } }
-        );
+        const review = await Review.findById(id);
 
-        if (result.modifiedCount > 0) {
-            return res.status(200).json({ message: "Comment added successfully", newComment });
-        } else {
+        if (!review) {
             return res.status(404).json({ error: "Review not found" });
         }
+
+        // Add the comment to the comments array
+        review.comments.push({
+            userId,
+            comment,
+            createdAt
+        });
+
+        review.updatedAt = new Date(); // Update the updatedAt field
+
+        await review.save(); // Save the updated review
+
+        return res.status(200).json({ message: "Comment added successfully", newComment: review.comments[review.comments.length - 1] });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -95,9 +86,8 @@ const getAllReviews = async (req, res) => {
     //#swagger.summary = 'Get All Reviews'
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).find().toArray();
-        return res.status(200).json(data);
+        const reviews = await Review.find(); // Mongoose .find() method to get all reviews
+        return res.status(200).json(reviews);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -111,11 +101,10 @@ const getReview = async (req, res) => {
 
     const { id } = req.params;
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const review = await Review.findById(id); // Use Mongoose .findById() to find a review by ID
 
-        if (data) {
-            return res.status(200).json(data);
+        if (review) {
+            return res.status(200).json(review);
         } else {
             return res.status(404).json({ error: "Review not found" });
         }
@@ -141,25 +130,21 @@ const updateReview = async (req, res) => {
 
     const { id } = req.params;
     const { rating, comment } = req.body;
-    const updatedAt = new Date();
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const review = await Review.findById(id);
 
-        if (!data) {
+        if (!review) {
             return res.status(404).json({ error: "Review not found" });
         }
 
-        const updatedReview = {
-            ...data,
-            rating: rating || data.rating,
-            comment: comment || data.comment,
-            updatedAt
-        };
+        review.rating = rating || review.rating;
+        review.comment = comment || review.comment;
+        review.updatedAt = new Date(); // Update the updatedAt field
 
-        await db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedReview });
-        return res.status(200).json(updatedReview);
+        await review.save(); // Save the updated review
+
+        return res.status(200).json(review);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -180,14 +165,14 @@ const deleteReview = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const review = await Review.findById(id);
 
-        if (!data) {
+        if (!review) {
             return res.status(404).json({ error: "Review not found" });
         }
 
-        await db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+        await review.deleteOne({ _id: id });
+
         return res.status(200).json({ message: "Review deleted successfully" });
     } catch (err) {
         console.error(err);

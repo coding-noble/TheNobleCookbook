@@ -1,5 +1,5 @@
 const passport = require('passport');
-const { getDatabase } = require("../data/database");
+const User = require('../models/User');  // Import the Mongoose User model
 
 // GitHub login route handler
 const githubLogin = (req, res, next) => {
@@ -20,7 +20,6 @@ const githubCallback = (req, res, next) => {
     //#swagger.tags = ['Login Authentication']
     //#swagger.summary = 'GitHub Callback'
     passport.authenticate('github', { failureRedirect: '/' })(req, res, async () => {
-
         try {
             const { nodeId, displayName, provider, email, avatar_url, bio } = req.user;
             const createdAt = new Date();
@@ -28,37 +27,34 @@ const githubCallback = (req, res, next) => {
             const role = "user";
 
             const newUser = {
-                email: email,
+                email,
                 oauthProviders: [{ provider, providerId: nodeId }],
                 profile: {
                     name: displayName || '',
                     bio: bio || '',
-                    avatarUrl: avatar_url || '',
+                    avatarUrl: avatar_url || ''
                 },
                 role,
                 createdAt,
                 updatedAt
             };
 
-            const db = getDatabase();
-            const existingUser = await db.collection("users").findOne({
+            // Check if user already exists using Mongoose
+            let existingUser = await User.findOne({
                 "oauthProviders.provider": provider,
                 "oauthProviders.providerId": nodeId
             });
 
             if (existingUser) {
-                req.session.user = existingUser;
-                return res.redirect('/');
+                req.session.user = existingUser;  // Set user session
+                return res.redirect('/');  // Redirect to home
             }
 
-            const createdUser = await db.collection("users").insertOne(newUser);
-            if (createdUser.insertedId) {
-                req.session.user = { _id: createdUser.insertedId, ...newUser };
-                return res.redirect('/');
-            } else {
-                return res.status(500).json({ error: "Failed to insert user" });
-            }
+            // If user doesn't exist, create new user using Mongoose
+            existingUser = await User.create(newUser);
 
+            req.session.user = { _id: existingUser._id, ...newUser };  // Set user session
+            return res.redirect('/');  // Redirect to home
         } catch (err) {
             next(err);
         }
@@ -93,25 +89,22 @@ const googleCallback = (req, res, next) => {
                 updatedAt
             };
 
-            const db = getDatabase();
-            const existingUser = await db.collection("users").findOne({
+            // Check if user already exists using Mongoose
+            let existingUser = await User.findOne({
                 "oauthProviders.provider": provider,
                 "oauthProviders.providerId": sub
             });
 
             if (existingUser) {
-                req.session.user = existingUser;
-                return res.redirect('/');
+                req.session.user = existingUser;  // Set user session
+                return res.redirect('/');  // Redirect to home
             }
 
-            const createdUser = await db.collection("users").insertOne(newUser);
-            if (createdUser.insertedId) {
-                req.session.user = { _id: createdUser.insertedId, ...newUser };
-                return res.redirect('/');
-            } else {
-                return res.status(500).json({ error: "Failed to insert user" });
-            }
+            // If user doesn't exist, create new user using Mongoose
+            existingUser = await User.create(newUser);
 
+            req.session.user = { _id: existingUser._id, ...newUser };  // Set user session
+            return res.redirect('/');  // Redirect to home
         } catch (err) {
             next(err);
         }

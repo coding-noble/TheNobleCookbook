@@ -1,7 +1,6 @@
-const { getDatabase } = require("../data/database");
+const Category = require('../models/Category');
 const { check, validationResult } = require('express-validator');
-const { ObjectId } = require("mongodb");
-const DB_COLLECTION = "categories";
+
 
 const createCategory = async (req, res) => {
     //#swagger.tags = ['Categories']
@@ -16,27 +15,22 @@ const createCategory = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // Category Creation
     const { name, description } = req.body;
     const createdAt = new Date();
     const updatedAt = createdAt;
 
-    const newCategory = {
-        name,
-        description,
-        recipes: [],
-        createdAt,
-        updatedAt
-    };
-
     try {
-        const db = getDatabase();
-        const result = await db.collection(DB_COLLECTION).insertOne(newCategory);
-        if (result.insertedId) {
-            return res.status(201).json({ _id: result.insertedId, ...newCategory });
-        } else {
-            return res.status(500).json({ error: "Failed to insert category" });
-        }
+        const newCategory = new Category({
+            name,
+            description,
+            recipes: [],
+            createdAt,
+            updatedAt,
+        });
+
+        const result = await newCategory.save(); // Save the new category using Mongoose
+
+        return res.status(201).json({ _id: result._id, ...newCategory.toObject() });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -59,17 +53,18 @@ const addRecipeToCategory = async (req, res) => {
     const { recipeId } = req.body;
 
     try {
-        const db = getDatabase();
-        const result = await db.collection(DB_COLLECTION).updateOne(
-            { _id: new ObjectId(id) },
-            { $addToSet: { recipes: new ObjectId(recipeId) }, $set: { updatedAt: new Date() } }
-        );
+        const category = await Category.findById(id); // Use Mongoose to find the category
 
-        if (result.modifiedCount > 0) {
-            return res.status(200).json({ message: "Recipe added to category successfully" });
-        } else {
+        if (!category) {
             return res.status(404).json({ error: "Category not found" });
         }
+
+        category.recipes.addToSet(recipeId);
+        category.updatedAt = new Date();
+
+        await category.save();
+
+        return res.status(200).json({ message: "Recipe added to category successfully" });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -80,9 +75,8 @@ const getAllCategories = async (req, res) => {
     //#swagger.tags = ['Categories']
     //#swagger.summary = 'Get All Categories'
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).find().toArray();
-        return res.status(200).json(data);
+        const categories = await Category.find(); // Use Mongoose to find all categories
+        return res.status(200).json(categories);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -94,10 +88,9 @@ const getCategory = async (req, res) => {
     //#swagger.summary = 'Get Single Category by ID'
     const { id } = req.params;
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
-        if (data) {
-            return res.status(200).json(data);
+        const category = await Category.findById(id); // Use Mongoose to find category by ID
+        if (category) {
+            return res.status(200).json(category);
         } else {
             return res.status(404).json({ error: "Category not found" });
         }
@@ -124,22 +117,19 @@ const updateCategory = async (req, res) => {
     const updatedDate = new Date();
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const category = await Category.findById(id); // Find the category by ID
 
-        if (!data) {
+        if (!category) {
             return res.status(404).json({ error: "Category not found" });
         }
 
-        const updatedCategory = {
-            ...data,
-            name: name || data.name,
-            description: description || data.description,
-            updatedAt: updatedDate
-        };
+        // Update the category
+        category.name = name || category.name;
+        category.description = description || category.description;
+        category.updatedAt = updatedDate;
 
-        await db.collection(DB_COLLECTION).updateOne({ _id: new ObjectId(id) }, { $set: updatedCategory });
-        return res.status(200).json(updatedCategory);
+        await category.save(); // Save the updated category
+        return res.status(200).json(category);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message || "Database action error" });
@@ -160,14 +150,13 @@ const deleteCategory = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const db = getDatabase();
-        const data = await db.collection(DB_COLLECTION).findOne({ _id: new ObjectId(id) });
+        const category = await Category.findById(id); // Use Mongoose to find the category
 
-        if (!data) {
+        if (!category) {
             return res.status(404).json({ error: "Category not found" });
         }
 
-        await db.collection(DB_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+        await category.deleteOne({ _id: id });
         return res.status(200).json({ message: "Category deleted successfully" });
     } catch (err) {
         console.error(err);
@@ -181,5 +170,5 @@ module.exports = {
     getCategory,
     updateCategory,
     deleteCategory,
-    addRecipeToCategory
+    addRecipeToCategory,
 };
