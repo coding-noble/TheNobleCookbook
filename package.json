@@ -7,12 +7,11 @@
     "Swagger AutoGen": "node utils/swagger.js",
     "Reset Swagger": "del swagger.json && node utils/swagger.js && node server.js",
     "All Jest": "jest",
-    "Authentication Jest": "jest ctrlAuthentication.test.js",
+    "Authentication Jest": "jest authentication.test.js",
     "Categories Jest": "jest ctrlCategories.test.js",
     "Recipes Jest": "jest ctrlRecipes.test.js",
     "Reviews Jest": "jest ctrlReviews.test.js",
-    "Users Jest": "jest ctrlUsers.test.js",
-    "Utility Jest": "jest util.test.js"
+    "Users Jest": "jest ctrlUsers.test.js"
   },
   "keywords": [],
   "author": "",
