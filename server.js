@@ -64,7 +64,7 @@ passport.deserializeUser(async function (user, done) {
 const startServer = async () => {
     try {
         await initDb(); // Initializes Mongoose connection
-        app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+        app.listen(port, () => console.log(`Server running: http://localhost:${port}`));
     } catch (err) {
         console.error('Database initialization error:', err);
         process.exit(1); // Exit if DB connection fails

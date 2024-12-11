@@ -5,10 +5,9 @@
     "description": "Swagger API documentation for the Noble Cookbook web service.",
     "version": "1.0.0"
   },
-  "host": "localhost:2600",
+  "host": "the-noble-cookbook.onrender.com",
   "basePath": "/",
   "schemes": [
-    "http",
     "https"
   ],
   "paths": {

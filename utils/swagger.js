@@ -5,7 +5,7 @@ const doc = {
         title: "The Noble Cookbook API",
         description: "Swagger API documentation for the Noble Cookbook web service."
     },
-    host: "https://the-noble-cookbook.onrender.com",
+    host: "the-noble-cookbook.onrender.com",
     schemes: ['https']
 };
 
