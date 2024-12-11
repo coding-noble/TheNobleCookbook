@@ -6,7 +6,13 @@
     "Start": "node server.js",
     "Swagger AutoGen": "node utils/swagger.js",
     "Reset Swagger": "del swagger.json && node utils/swagger.js && node server.js",
-    "Run Jest": "npx jest"
+    "All Jest": "jest",
+    "Authentication Jest": "jest ctrlAuthentication.test.js",
+    "Categories Jest": "jest ctrlCategories.test.js",
+    "Recipes Jest": "jest ctrlRecipes.test.js",
+    "Reviews Jest": "jest ctrlReviews.test.js",
+    "Users Jest": "jest ctrlUsers.test.js",
+    "Utility Jest": "jest util.test.js"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +34,7 @@
     "urijs": "^1.19.11"
   },
   "devDependencies": {
+    "@shelf/jest-mongodb": "^4.3.2",
     "jest": "^29.7.0"
   }
 }
