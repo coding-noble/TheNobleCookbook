@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require('../data/database').mongoose;
 const { Schema } = mongoose;
 
 const reviewSchema = new Schema(

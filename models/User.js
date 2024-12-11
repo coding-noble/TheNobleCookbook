@@ -1,30 +1,24 @@
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const mongoose = require('../data/database').mongoose;
 
-const userSchema = new Schema(
-  {
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-    },
-    oauthProviders: [
-      {
-        provider: { type: String, required: true },
-        providerId: { type: String, required: true },
-      },
-    ],
-    profile: {
-      name: { type: String, default: '' },
-      bio: { type: String, default: '' },
-      avatarUrl: { type: String, default: '' },
-    },
+const oauthProviderSchema = new mongoose.Schema({
+    provider: { type: String, required: true },
+    providerId: { type: String, required: true }
+});
+
+const profileSchema = new mongoose.Schema({
+    name: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    avatarUrl: { type: String, default: '' }
+});
+
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    oauthProviders: [oauthProviderSchema],
+    profile: profileSchema,
     role: { type: String, default: 'user' },
     createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-  },
-  { timestamps: true }
-);
+    updatedAt: { type: Date, default: Date.now }
+});
 
 const User = mongoose.model('User', userSchema);
 
