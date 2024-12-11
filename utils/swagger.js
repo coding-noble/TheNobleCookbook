@@ -5,7 +5,7 @@ const doc = {
         title: "The Noble Cookbook API",
         description: "Swagger API documentation for the Noble Cookbook web service."
     },
-    host: process.env.HOST || 'localhost:2600',
+    host: "localhost:2600",
     schemes: ['http', 'https']
 };
 
