@@ -20,10 +20,14 @@ app.use(bodyParser.json())
         resave: false,
         saveUninitialized: true
     }))
-    .use(passport.initialize()) // Initialize Passport for authentication
-    .use(passport.session()) // Use sessions for keeping users logged in
-    .use(cors({ origin: "*", methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"] })) // CORS settings
-    .use("/", routes); // Register all routes (taskRoutes, userRoutes, authRoutes, etc.)
+    .use(passport.initialize())
+    .use(passport.session())
+    .use(cors(
+        {
+            origin: "*",
+            methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"]
+        }))
+    .use("/", routes);
 
 // Root route
 app.get('/', (req, res) => {
