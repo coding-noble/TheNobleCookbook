@@ -116,7 +116,7 @@ const updateUser = async (req, res) => {
         user.updatedAt = new Date(); // Update the updatedAt field
 
         // Save the updated user
-        const updatedUser = await user.save();
+        const updatedUser = await user.updateOne({ _id: id });
 
         return res.status(200).json(updatedUser); // Return the updated user
     } catch (err) {
