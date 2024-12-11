@@ -8,7 +8,8 @@
   "host": "localhost:2600",
   "basePath": "/",
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "paths": {
     "/github": {
